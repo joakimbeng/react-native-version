@@ -1,5 +1,5 @@
 {
-  "name": "react-native-version",
+  "name": "@joakimbeng/react-native-version",
   "description": "Version your React Native or Expo app",
   "license": "MIT",
   "author": "Martin Stovicek",
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/joakimbeng/react-native-version/issues"
   },
-  "version": "2.6.6",
+  "version": "3.0.0",
   "main": "index.js",
   "bin": {
     "react-native-version": "cli.js"
