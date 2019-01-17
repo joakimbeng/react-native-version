@@ -1,57 +1,39 @@
-import expected from "./fixtures";
-import npmScriptsMacro from "./helpers/npmScriptsMacro";
-import test from "ava";
+import test from 'ava';
+import expected from './fixtures';
+import npmScriptsMacro from './helpers/npmScriptsMacro';
 
 test(
-	"postversion (legacy)",
+	'postversion',
 	npmScriptsMacro,
-	{ postversion: "--skip-tag -L" },
-	"AwesomeProject",
+	{postversion: '--skip-tag'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion",
+	'postversion (Expo)',
 	npmScriptsMacro,
-	{ postversion: "--skip-tag" },
-	"AwesomeProject",
+	{postversion: '--skip-tag'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion (Expo)",
+	'version',
 	npmScriptsMacro,
-	{ postversion: "--skip-tag" },
-	"my-new-project",
+	{version: '--skip-tag'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"version (legacy)",
+	'version (Expo)',
 	npmScriptsMacro,
-	{ version: "--skip-tag -L" },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"version",
-	npmScriptsMacro,
-	{ version: "--skip-tag" },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"version (Expo)",
-	npmScriptsMacro,
-	{ version: "--skip-tag" },
-	"my-new-project",
+	{version: '--skip-tag'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );

@@ -1,19 +1,19 @@
-const beautify = require("js-beautify").html;
-const child = require("child_process");
-const detectIndent = require("detect-indent");
-const dottie = require("dottie");
-const flattenDeep = require("lodash.flattendeep");
-const fs = require("fs");
-const list = require("./util").list;
-const log = require("./util").log;
-const path = require("path");
-const plist = require("plist");
-const pSettle = require("p-settle");
-const resolveFrom = require("resolve-from");
-const semver = require("semver");
-const stripIndents = require("common-tags/lib/stripIndents");
-const unique = require("lodash.uniq");
-const Xcode = require("pbxproj-dom/xcode").Xcode;
+'use strict';
+const child = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const flattenDeep = require('lodash.flattendeep');
+const dottie = require('dottie');
+const detectIndent = require('detect-indent');
+const {html: beautify} = require('js-beautify');
+const plist = require('plist');
+const pSettle = require('p-settle');
+const resolveFrom = require('resolve-from');
+const semver = require('semver');
+const stripIndents = require('common-tags/lib/stripIndents');
+const unique = require('lodash.uniq');
+const {Xcode} = require('pbxproj-dom/xcode');
+const {list, log} = require('./util');
 
 /**
  * Custom type definition for Promises
@@ -33,8 +33,12 @@ const env = {
  */
 function getDefaults() {
 	return {
-		android: "android/app/build.gradle",
-		ios: "ios"
+		android: 'android/app/build.gradle',
+		ios: 'ios',
+		incrementBuild: true,
+		neverIncrementBuild: false,
+		amend: true,
+		neverAmend: false
 	};
 }
 
@@ -49,12 +53,9 @@ function getPlistFilenames(xcode) {
 		flattenDeep(
 			xcode.document.projects.map(project => {
 				return project.targets.filter(Boolean).map(target => {
-					return target.buildConfigurationsList.buildConfigurations.map(
-						config => {
-							return config.ast.value.get("buildSettings").get("INFOPLIST_FILE")
-								.text;
-						}
-					);
+					return target.buildConfigurationsList.buildConfigurations.map(config => {
+						return config.ast.value.get('buildSettings').get('INFOPLIST_FILE').text;
+					});
 				});
 			})
 		)
@@ -68,10 +69,10 @@ function getPlistFilenames(xcode) {
  */
 function isExpoProject(projPath) {
 	try {
-		let module = resolveFrom(projPath, "expo");
-		let appInfo = require(`${projPath}/app.json`);
+		const module = resolveFrom(projPath, 'expo');
+		const appInfo = require(`${projPath}/app.json`);
 
-		return !!(module && appInfo.expo);
+		return Boolean(module && appInfo.expo);
 	} catch (err) {
 		return false;
 	}
@@ -84,130 +85,133 @@ function isExpoProject(projPath) {
  * @return {Promise<string|Error>} A promise which resolves with the last commit hash
  */
 function version(program, projectPath) {
-	const prog = Object.assign({}, getDefaults(), program || {});
+	const prog = {...getDefaults(), ...(program || {})};
 
-	const projPath = path.resolve(
-		process.cwd(),
-		projectPath || prog.args[0] || ""
-	);
+	const projPath = path.resolve(process.cwd(), projectPath || prog.args[0] || '');
 
-	const programOpts = Object.assign({}, prog, {
+	const programOpts = {
+		...prog,
 		android: path.join(projPath, prog.android),
 		ios: path.join(projPath, prog.ios)
-	});
+	};
 
 	const targets = [].concat(programOpts.target, env.target).filter(Boolean);
-	var appPkg;
+	const amend = programOpts.amend && !programOpts.neverAmend;
+	const incrementBuild = programOpts.incrementBuild && !programOpts.neverIncrementBuild;
+	let appPkg;
 
 	try {
-		resolveFrom(projPath, "react-native");
-		appPkg = require(path.join(projPath, "package.json"));
+		resolveFrom(projPath, 'react-native');
+		appPkg = require(path.join(projPath, 'package.json'));
 	} catch (err) {
 		if (err.message === "Cannot find module 'react-native'") {
 			log({
-				style: "red",
+				style: 'red',
 				text: `Is this the right folder? ${err.message} in ${projPath}`
 			});
 		} else {
 			log({
-				style: "red",
+				style: 'red',
 				text: err.message
 			});
 
 			log({
-				style: "red",
-				text:
-					"Is this the right folder? Looks like there isn't a package.json here"
+				style: 'red',
+				text: "Is this the right folder? Looks like there isn't a package.json here"
 			});
 		}
 
 		log({
-			style: "yellow",
-			text: "Pass the project path as an argument, see --help for usage"
+			style: 'yellow',
+			text: 'Pass the project path as an argument, see --help for usage'
 		});
 
 		if (program.outputHelp) {
 			program.outputHelp();
 		}
 
-		process.exit(1);
+		process.exitCode = 1;
+		return;
 	}
 
-	var appJSON;
-	const appJSONPath = path.join(projPath, "app.json");
+	let appJSON;
+	const appJSONPath = path.join(projPath, 'app.json');
 	const isExpoApp = isExpoProject(projPath);
 
-	isExpoApp && log({ text: "Expo detected" }, programOpts.quiet);
+	if (isExpoApp) {
+		log({text: 'Expo detected'}, programOpts.quiet);
+	}
 
 	try {
 		appJSON = require(appJSONPath);
 
-		if (isExpoApp && !programOpts.incrementBuild) {
-			appJSON = Object.assign({}, appJSON, {
-				expo: Object.assign({}, appJSON.expo, {
-					version: appPkg.version
-				})
-			});
+		if (isExpoApp) {
+			appJSON = {
+				...appJSON,
+				expo: {...appJSON.expo, version: appPkg.version}
+			};
 		}
 	} catch (err) {}
 
-	var android;
-	var ios;
+	let android;
+	let ios;
 
-	if (!targets.length || targets.indexOf("android") > -1) {
-		android = new Promise(function(resolve, reject) {
-			log({ text: "Versioning Android..." }, programOpts.quiet);
+	if (targets.length === 0 || targets.indexOf('android') > -1) {
+		android = new Promise((resolve, reject) => {
+			log({text: 'Versioning Android...'}, programOpts.quiet);
 
-			var gradleFile;
+			let gradleFile;
 
 			try {
-				gradleFile = fs.readFileSync(programOpts.android, "utf8");
+				gradleFile = fs.readFileSync(programOpts.android, 'utf8');
 			} catch (err) {
-				isExpoApp ||
+				if (!isExpoApp) {
 					reject([
 						{
-							style: "red",
-							text: "No gradle file found at " + programOpts.android
+							style: 'red',
+							text: 'No gradle file found at ' + programOpts.android
 						},
 						{
-							style: "yellow",
+							style: 'yellow',
 							text: 'Use the "--android" option to specify the path manually'
 						}
 					]);
+					return;
+				}
 			}
 
-			if (!programOpts.incrementBuild && !isExpoApp) {
+			if (!isExpoApp) {
 				gradleFile = gradleFile.replace(
 					/versionName (["'])(.*)["']/,
-					"versionName $1" + appPkg.version + "$1"
+					'versionName $1' + appPkg.version + '$1'
 				);
 			}
 
-			if (!programOpts.neverIncrementBuild) {
+			if (incrementBuild) {
 				if (isExpoApp) {
-					const versionCode = dottie.get(appJSON, "expo.android.versionCode");
+					const versionCode = dottie.get(appJSON, 'expo.android.versionCode');
 
-					appJSON = Object.assign({}, appJSON, {
-						expo: Object.assign({}, appJSON.expo, {
-							android: Object.assign({}, appJSON.expo.android, {
+					appJSON = {
+						...appJSON,
+						expo: {
+							...appJSON.expo,
+							android: {
+								...appJSON.expo.android,
 								versionCode: programOpts.setBuild
 									? programOpts.setBuild
 									: versionCode
-										? versionCode + 1
-										: 1
-							})
-						})
-					});
+									? versionCode + 1
+									: 1
+							}
+						}
+					};
 				} else {
-					gradleFile = gradleFile.replace(/versionCode (\d+)/, function(
-						match,
-						cg1
-					) {
+					gradleFile = gradleFile.replace(/versionCode (\d+)/, (match, cg1) => {
 						const newVersionCodeNumber = programOpts.setBuild
 							? programOpts.setBuild
 							: parseInt(cg1, 10) + 1;
 
-						return "versionCode " + newVersionCodeNumber;
+						return 'versionCode ' + newVersionCodeNumber;
 					});
 				}
 			}
@@ -218,161 +222,83 @@ function version(program, projectPath) {
 				fs.writeFileSync(programOpts.android, gradleFile);
 			}
 
-			log({ text: "Android updated" }, programOpts.quiet);
+			log({text: 'Android updated'}, programOpts.quiet);
 			resolve();
 		});
 	}
 
-	if (!targets.length || targets.indexOf("ios") > -1) {
-		ios = new Promise(function(resolve, reject) {
-			log({ text: "Versioning iOS..." }, programOpts.quiet);
+	if (targets.length === 0 || targets.indexOf('ios') > -1) {
+		ios = new Promise(resolve => {
+			log({text: 'Versioning iOS...'}, programOpts.quiet);
 
 			if (isExpoApp) {
-				if (!programOpts.neverIncrementBuild) {
-					const buildNumber = dottie.get(appJSON, "expo.ios.buildNumber");
+				if (incrementBuild) {
+					const buildNumber = dottie.get(appJSON, 'expo.ios.buildNumber');
 
-					appJSON = Object.assign({}, appJSON, {
-						expo: Object.assign({}, appJSON.expo, {
-							ios: Object.assign({}, appJSON.expo.ios, {
+					appJSON = {
+						...appJSON,
+						expo: {
+							...appJSON.expo,
+							ios: {
+								...appJSON.expo.ios,
 								buildNumber: programOpts.setBuild
 									? programOpts.setBuild.toString()
 									: buildNumber && !programOpts.resetBuild
-										? `${parseInt(buildNumber, 10) + 1}`
-										: "1"
-							})
-						})
-					});
+									? `${parseInt(buildNumber, 10) + 1}`
+									: '1'
+							}
+						}
+					};
 				}
 
 				fs.writeFileSync(appJSONPath, JSON.stringify(appJSON, null, 2));
-			} else if (program.legacy) {
-				try {
-					child.execSync("xcode-select --print-path", {
-						stdio: ["ignore", "ignore", "pipe"]
-					});
-				} catch (err) {
-					reject([
-						{
-							style: "red",
-							text: err
-						},
-						{
-							style: "yellow",
-							text: "Looks like Xcode Command Line Tools aren't installed"
-						},
-						{
-							text: "\n  Install:\n\n    $ xcode-select --install\n"
-						}
-					]);
-
-					return;
-				}
-
-				const agvtoolOpts = {
-					cwd: programOpts.ios
-				};
-
-				try {
-					child.execSync("agvtool what-version", agvtoolOpts);
-				} catch (err) {
-					const stdout = err.stdout.toString().trim();
-
-					reject(
-						stdout.indexOf("directory") > -1
-							? [
-									{
-										style: "red",
-										text: "No project folder found at " + programOpts.ios
-									},
-									{
-										style: "yellow",
-										text: 'Use the "--ios" option to specify the path manually'
-									}
-							  ]
-							: [
-									{
-										style: "red",
-										text: stdout
-									}
-							  ]
-					);
-
-					return;
-				}
-
-				if (!programOpts.incrementBuild) {
-					child.spawnSync(
-						"agvtool",
-						["new-marketing-version", appPkg.version],
-						agvtoolOpts
-					);
-				}
-
-				if (!programOpts.neverIncrementBuild) {
-					if (programOpts.resetBuild) {
-						child.execSync("agvtool new-version -all 1", agvtoolOpts);
-					} else {
-						child.execSync("agvtool next-version -all", agvtoolOpts);
-					}
-
-					if (programOpts.setBuild) {
-						child.execSync(
-							`agvtool new-version -all ${program.setBuild}`,
-							agvtoolOpts
-						);
-					}
-				}
 			} else {
 				// Find any folder ending in .xcodeproj
 				const xcodeProjects = fs
 					.readdirSync(programOpts.ios)
 					.filter(file => /\.xcodeproj$/i.test(file));
 
-				if (xcodeProjects.length < 1) {
+				if (xcodeProjects.length === 0) {
 					throw new Error(`Xcode project not found in "${programOpts.ios}"`);
 				}
 
 				const projectFolder = path.join(programOpts.ios, xcodeProjects[0]);
-				const xcode = Xcode.open(path.join(projectFolder, "project.pbxproj"));
+				const xcode = Xcode.open(path.join(projectFolder, 'project.pbxproj'));
 				const plistFilenames = getPlistFilenames(xcode);
 
 				xcode.document.projects.forEach(project => {
-					!programOpts.neverIncrementBuild &&
-						project.targets.filter(Boolean).forEach(target => {
-							target.buildConfigurationsList.buildConfigurations.forEach(
-								config => {
-									if (target.name === appPkg.name) {
-										var CURRENT_PROJECT_VERSION = 1;
+					project.targets.filter(Boolean).forEach(target => {
+						if (!incrementBuild) {
+							return;
+						}
 
-										if (!programOpts.resetBuild) {
-											CURRENT_PROJECT_VERSION =
-												parseInt(
-													config.ast.value
-														.get("buildSettings")
-														.get("CURRENT_PROJECT_VERSION").text,
-													10
-												) + 1;
-										}
+						target.buildConfigurationsList.buildConfigurations.forEach(config => {
+							if (target.name === appPkg.name) {
+								let CURRENT_PROJECT_VERSION = 1;
 
-										if (programOpts.setBuild) {
-											CURRENT_PROJECT_VERSION = programOpts.setBuild;
-										}
-
-										config.patch({
-											buildSettings: {
-												CURRENT_PROJECT_VERSION
-											}
-										});
-									}
+								if (!programOpts.resetBuild) {
+									CURRENT_PROJECT_VERSION =
+										parseInt(
+											config.ast.value.get('buildSettings').get('CURRENT_PROJECT_VERSION').text,
+											10
+										) + 1;
 								}
-							);
+
+								if (programOpts.setBuild) {
+									CURRENT_PROJECT_VERSION = programOpts.setBuild;
+								}
+
+								config.patch({
+									buildSettings: {
+										CURRENT_PROJECT_VERSION
+									}
+								});
+							}
 						});
+					});
 
 					const plistFiles = plistFilenames.map(filename => {
-						return fs.readFileSync(
-							path.join(programOpts.ios, filename),
-							"utf8"
-						);
+						return fs.readFileSync(path.join(programOpts.ios, filename), 'utf8');
 					});
 
 					const parsedPlistFiles = plistFiles.map(file => {
@@ -382,38 +308,27 @@ function version(program, projectPath) {
 					parsedPlistFiles.forEach((json, index) => {
 						fs.writeFileSync(
 							path.join(programOpts.ios, plistFilenames[index]),
-							plist.build(
-								Object.assign(
-									{},
-									json,
-									!programOpts.incrementBuild
-										? {
-												CFBundleShortVersionString: appPkg.version
-										  }
-										: {},
-									!programOpts.neverIncrementBuild
-										? Object.assign(
-												{},
-												{
-													CFBundleVersion: `${
-														programOpts.resetBuild
-															? 1
-															: parseInt(json.CFBundleVersion, 10) + 1
-													}`
-												},
-												programOpts.setBuild
-													? {
-															CFBundleVersion: programOpts.setBuild.toString()
-													  }
-													: {}
-										  )
-										: {}
-								)
-							)
+							plist.build({
+								...json,
+								CFBundleShortVersionString: appPkg.version,
+								...(incrementBuild
+									? {
+											CFBundleVersion: `${
+												programOpts.resetBuild ? 1 : parseInt(json.CFBundleVersion, 10) + 1
+											}`,
+											...(programOpts.setBuild
+												? {
+														CFBundleVersion: programOpts.setBuild.toString()
+												  }
+												: {})
+									  }
+									: {})
+							})
 						);
 					});
 
 					plistFilenames.forEach((filename, index) => {
+						/* eslint-disable camelcase */
 						const indent = detectIndent(plistFiles[index]);
 
 						fs.writeFileSync(
@@ -422,152 +337,125 @@ function version(program, projectPath) {
 							<?xml version="1.0" encoding="UTF-8"?>
 							<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 							<plist version="1.0">` +
-								"\n" +
+								'\n' +
 								beautify(
 									fs
-										.readFileSync(path.join(programOpts.ios, filename), "utf8")
+										.readFileSync(path.join(programOpts.ios, filename), 'utf8')
 										.match(/<dict>[\s\S]*<\/dict>/)[0],
-									Object.assign(
-										{ end_with_newline: true },
-										indent.type === "tab"
-											? { indent_with_tabs: true }
-											: { indent_size: indent.amount }
-									)
+									{
+										end_with_newline: true,
+										...(indent.type === 'tab'
+											? {indent_with_tabs: true}
+											: {indent_size: indent.amount})
+									}
 								) +
 								stripIndents`
 							</plist>` +
-								"\n"
+								'\n'
 						);
+						/* eslint-enable camelcase */
 					});
 				});
 
 				xcode.save();
 			}
 
-			log({ text: "iOS updated" }, programOpts.quiet);
+			log({text: 'iOS updated'}, programOpts.quiet);
 			resolve();
 		});
 	}
 
 	return pSettle([android, ios].filter(Boolean))
-		.then(function(result) {
+		.then(result => {
 			const errs = result
-				.filter(function(item) {
+				.filter(item => {
 					return item.isRejected;
 				})
-				.map(function(item) {
+				.map(item => {
 					return item.reason;
 				});
 
-			if (errs.length) {
+			if (errs.length !== 0) {
 				errs
-					.reduce(function(a, b) {
-						return a.concat(b);
-					}, [])
-					.forEach(function(err) {
+					.reduce((a, b) => a.concat(b), [])
+					.forEach(err => {
 						if (program.outputHelp) {
-							log(
-								Object.assign({ style: "red", text: err.toString() }, err),
-								programOpts.quiet
-							);
+							log({style: 'red', text: err.toString(), ...err}, programOpts.quiet);
 						}
 					});
 
 				if (program.outputHelp) {
 					program.outputHelp();
+					return;
 				}
 
-				throw errs
-					.map(function(errGrp, index) {
-						return errGrp
-							.map(function(err) {
-								return err.text;
-							})
-							.join(", ");
-					})
-					.join("; ");
+				throw errs.map(errGrp => errGrp.map(err => err.text).join(', ')).join('; ');
 			}
 
 			const gitCmdOpts = {
 				cwd: projPath
 			};
 
-			if (
-				programOpts.amend ||
-				(process.env.npm_lifecycle_event &&
-					process.env.npm_lifecycle_event.indexOf("version") > -1 &&
-					!programOpts.neverAmend)
-			) {
-				const latestTag =
-					(programOpts.amend ||
-						process.env.npm_config_git_tag_version ||
-						process.env.npm_config_version_git_tag) &&
-					semver.valid(
-						child
-							.execSync("git log -1 --pretty=%s", gitCmdOpts)
-							.toString()
-							.trim()
-					) &&
-					child
-						.execSync("git describe --exact-match HEAD", gitCmdOpts)
-						.toString()
-						.trim();
+			if (amend) {
+				let latestTag = child
+					.execSync('git describe --exact-match HEAD', gitCmdOpts)
+					.toString()
+					.trim();
 
-				log({ text: "Amending..." }, programOpts.quiet);
+				if (!semver.valid(latestTag)) {
+					latestTag = null;
+				}
+
+				log({text: 'Amending...'}, programOpts.quiet);
 
 				switch (process.env.npm_lifecycle_event) {
-					case "version":
+					case 'version':
 						child.spawnSync(
-							"git",
-							["add"].concat(
-								isExpoApp ? appJSONPath : [programOpts.android, programOpts.ios]
-							),
+							'git',
+							['add'].concat(isExpoApp ? appJSONPath : [programOpts.android, programOpts.ios]),
 							gitCmdOpts
 						);
 
 						break;
 
-					case "postversion":
+					case 'postversion':
 					default:
-						child.execSync("git commit -a --amend --no-edit", gitCmdOpts);
+						child.execSync('git commit -a --amend --no-edit', gitCmdOpts);
 
 						if (!programOpts.skipTag && latestTag) {
-							log({ text: "Adjusting Git tag..." }, programOpts.quiet);
-							child.execSync(
-								`git tag -af ${latestTag} -m ${latestTag}`,
-								gitCmdOpts
-							);
+							log({text: 'Adjusting Git tag...'}, programOpts.quiet);
+							child.execSync(`git tag -af ${latestTag} -m ${latestTag}`, gitCmdOpts);
 						}
 				}
 			}
 
 			log(
 				{
-					style: "green",
-					text: "Done"
+					style: 'green',
+					text: 'Done'
 				},
 				programOpts.quiet
 			);
 
-			return child.execSync("git log -1 --pretty=%H", gitCmdOpts).toString();
+			return child.execSync('git log -1 --pretty=%H', gitCmdOpts).toString();
 		})
-		.catch(function(err) {
-			if (process.env.RNV_ENV === "ava") {
+		.catch(err => {
+			if (process.env.RNV_ENV === 'ava') {
 				console.error(err);
 			}
 
 			log({
-				style: "red",
-				text: "Done, with errors."
+				style: 'red',
+				text: 'Done, with errors.'
 			});
 
-			process.exit(1);
+			process.exitCode = 1;
 		});
 }
 
 module.exports = {
-	getDefaults: getDefaults,
-	getPlistFilenames: getPlistFilenames,
-	isExpoProject: isExpoProject,
-	version: version
+	getDefaults,
+	getPlistFilenames,
+	isExpoProject,
+	version
 };

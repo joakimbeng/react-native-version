@@ -1,4 +1,4 @@
-const child = require("child_process");
+const child = require('child_process');
 
 /**
  * Promisified child_process.exec
@@ -7,8 +7,8 @@ const child = require("child_process");
  * @return {Promise} ChildProcess Promise object
  */
 function execAsync(cmd, opts) {
-	return new Promise(function(resolve, reject) {
-		child.exec(cmd, opts, function(err, stdout) {
+	return new Promise((resolve, reject) => {
+		child.exec(cmd, opts, (err, stdout) => {
 			if (err) {
 				reject(err);
 			} else {
@@ -16,10 +16,10 @@ function execAsync(cmd, opts) {
 			}
 		});
 	})
-		.then(function(result) {
+		.then(result => {
 			return result;
 		})
-		.catch(function(err) {
+		.catch(err => {
 			console.log(err);
 		});
 }

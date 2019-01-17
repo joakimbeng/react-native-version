@@ -1,26 +1,14 @@
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
+import {promisify} from 'util';
 
-const testProjectsPath = path.join(__dirname, "../fixtures");
+const testProjectsPath = path.join(__dirname, '../fixtures');
+
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
 
 export default async () => {
-	return new Promise(resolveFiles => {
-		fs.readdir(testProjectsPath, {}, (err, files) => {
-			Promise.all(
-				files.map(file => {
-					return new Promise(resolveStats => {
-						fs.stat(path.join(testProjectsPath, file), (err, stats) => {
-							resolveStats(stats);
-						});
-					});
-				})
-			).then(stats => {
-				resolveFiles(
-					files.filter((file, index) => {
-						return stats[index].isDirectory();
-					})
-				);
-			});
-		});
-	});
+	const files = await readdir(testProjectsPath, {});
+	const stats = await Promise.all(files.map(file => stat(path.join(testProjectsPath, file))));
+	return files.filter((_, index) => stats[index].isDirectory());
 };

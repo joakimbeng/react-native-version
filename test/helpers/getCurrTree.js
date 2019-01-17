@@ -1,4 +1,4 @@
-const gitPathnames = require("./gitPathnames");
+const gitPathnames = require('./gitPathnames');
 
 /**
  * Returns the current Git tree pathnames
@@ -11,9 +11,9 @@ function getCurrTree(t) {
 	};
 
 	return Promise.all([
-		gitPathnames("git show --name-only --pretty=", childProcessOpts),
+		gitPathnames('git show --name-only --pretty=', childProcessOpts),
 		gitPathnames('git status -s | grep " M " | cut -c4-', childProcessOpts)
-	]).then(function(result) {
+	]).then(result => {
 		return {
 			head: result[0],
 			index: result[1]

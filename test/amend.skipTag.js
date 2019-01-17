@@ -1,113 +1,77 @@
-import apiMacro from "./helpers/apiMacro";
-import cliMacro from "./helpers/cliMacro";
-import expected from "./fixtures";
-import npmScriptsMacro from "./helpers/npmScriptsMacro";
-import test from "ava";
+import test from 'ava';
+import apiMacro from './helpers/apiMacro';
+import cliMacro from './helpers/cliMacro';
+import expected from './fixtures';
+import npmScriptsMacro from './helpers/npmScriptsMacro';
 
 test(
-	"postversion (legacy)",
+	'postversion',
 	npmScriptsMacro,
-	{ postversion: "-a --skip-tag -L" },
-	"AwesomeProject",
+	{postversion: '-a --skip-tag'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion",
+	'postversion (Expo)',
 	npmScriptsMacro,
-	{ postversion: "-a --skip-tag" },
-	"AwesomeProject",
+	{postversion: '-a --skip-tag'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion (Expo)",
+	'version',
 	npmScriptsMacro,
-	{ postversion: "-a --skip-tag" },
-	"my-new-project",
+	{version: '-a --skip-tag'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"version (legacy)",
+	'version (Expo)',
 	npmScriptsMacro,
-	{ version: "-a --skip-tag -L" },
-	"AwesomeProject",
+	{version: '-a --skip-tag'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"version",
-	npmScriptsMacro,
-	{ version: "-a --skip-tag" },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"version (Expo)",
-	npmScriptsMacro,
-	{ version: "-a --skip-tag" },
-	"my-new-project",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"CLI (legacy)",
+	'CLI',
 	cliMacro,
-	["-a", "--skip-tag", "-L"],
-	"AwesomeProject",
+	['-a', '--skip-tag'],
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"CLI",
+	'CLI (Expo)',
 	cliMacro,
-	["-a", "--skip-tag"],
-	"AwesomeProject",
+	['-a', '--skip-tag'],
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"CLI (Expo)",
-	cliMacro,
-	["-a", "--skip-tag"],
-	"my-new-project",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"API (legacy)",
+	'API',
 	apiMacro,
-	{ amend: true, skipTag: true, legacy: true },
-	"AwesomeProject",
+	{amend: true, skipTag: true},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"API",
+	'API (Expo)',
 	apiMacro,
-	{ amend: true, skipTag: true },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"API (Expo)",
-	apiMacro,
-	{ amend: true, skipTag: true },
-	"my-new-project",
+	{amend: true, skipTag: true},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );

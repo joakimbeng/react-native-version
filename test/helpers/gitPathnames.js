@@ -1,4 +1,4 @@
-const execAsync = require("./execAsync");
+const execAsync = require('./execAsync');
 
 /**
  * Returns a filtered list of pathnames based on a supplied Git command
@@ -7,8 +7,8 @@ const execAsync = require("./execAsync");
  * @return {Array} List of pathnames
  */
 function gitPathnames(cmd, opts) {
-	return execAsync(cmd, opts).then(function(result) {
-		return result.split("\n").filter(Boolean);
+	return execAsync(cmd, opts).then(result => {
+		return result.split('\n').filter(Boolean);
 	});
 }
 

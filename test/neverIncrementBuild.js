@@ -1,113 +1,77 @@
-import apiMacro from "./helpers/apiMacro";
-import cliMacro from "./helpers/cliMacro";
-import expected from "./fixtures";
-import npmScriptsMacro from "./helpers/npmScriptsMacro";
-import test from "ava";
+import test from 'ava';
+import apiMacro from './helpers/apiMacro';
+import cliMacro from './helpers/cliMacro';
+import expected from './fixtures';
+import npmScriptsMacro from './helpers/npmScriptsMacro';
 
 test(
-	"postversion (legacy)",
+	'postversion',
 	npmScriptsMacro,
-	{ postversion: "-B -L" },
-	"AwesomeProject",
+	{postversion: '--never-increment-build'},
+	'AwesomeProject',
 	expected.version.neverIncrementBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"postversion",
+	'postversion (Expo)',
 	npmScriptsMacro,
-	{ postversion: "-B" },
-	"AwesomeProject",
+	{postversion: '--never-increment-build'},
+	'my-new-project',
 	expected.version.neverIncrementBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"postversion (Expo)",
+	'version',
 	npmScriptsMacro,
-	{ postversion: "-B" },
-	"my-new-project",
+	{version: '--never-increment-build'},
+	'AwesomeProject',
 	expected.version.neverIncrementBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"version (legacy)",
+	'version (Expo)',
 	npmScriptsMacro,
-	{ version: "-B -L" },
-	"AwesomeProject",
+	{version: '--never-increment-build'},
+	'my-new-project',
 	expected.version.neverIncrementBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"version",
-	npmScriptsMacro,
-	{ version: "-B" },
-	"AwesomeProject",
-	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.amended
-);
-
-test(
-	"version (Expo)",
-	npmScriptsMacro,
-	{ version: "-B" },
-	"my-new-project",
-	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.amended
-);
-
-test(
-	"CLI (legacy)",
+	'CLI',
 	cliMacro,
-	["-B", "-L"],
-	"AwesomeProject",
+	['--never-increment-build'],
+	'AwesomeProject',
 	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"CLI",
+	'CLI (Expo)',
 	cliMacro,
-	["-B"],
-	"AwesomeProject",
+	['--never-increment-build'],
+	'my-new-project',
 	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"CLI (Expo)",
-	cliMacro,
-	["-B"],
-	"my-new-project",
-	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
-);
-
-test(
-	"API (legacy)",
+	'API',
 	apiMacro,
-	{ neverIncrementBuild: true, legacy: true },
-	"AwesomeProject",
+	{neverIncrementBuild: true},
+	'AwesomeProject',
 	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"API",
+	'API (Expo)',
 	apiMacro,
-	{ neverIncrementBuild: true },
-	"AwesomeProject",
+	{neverIncrementBuild: true},
+	'my-new-project',
 	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
-);
-
-test(
-	"API (Expo)",
-	apiMacro,
-	{ neverIncrementBuild: true },
-	"my-new-project",
-	expected.version.neverIncrementBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );

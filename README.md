@@ -1,10 +1,8 @@
-# react-native-version [![Build Status](https://travis-ci.org/stovmascript/react-native-version.svg?branch=master)](https://travis-ci.org/stovmascript/react-native-version) [![npm](https://img.shields.io/npm/v/react-native-version.svg)](https://www.npmjs.com/package/react-native-version) [![npm](https://img.shields.io/npm/dm/react-native-version.svg)](https://www.npmjs.com/package/react-native-version)
+# react-native-version [![npm](https://img.shields.io/npm/v/@joakimbeng/react-native-version.svg)](https://www.npmjs.com/package/@joakimbeng/react-native-version) [![npm](https://img.shields.io/npm/dm/@joakimbeng/react-native-version.svg)](https://www.npmjs.com/package/@joakimbeng/react-native-version)
 
-Seamlessly shadows the behaviour of [`npm version`](https://docs.npmjs.com/cli/version).
+A fork of [stovmascript/react-native-version](https://github.com/stovmascript/react-native-version) which can be used with any other versioning tool as long as a valid [Semver](https://semver.org/) tag is generated.
 
-## npm-scripts hook (automatic method)
-
-### Setup
+## Setup
 
 ```bash
 $ npm install react-native-version --save-dev
@@ -12,7 +10,7 @@ $ npm install react-native-version --save-dev
 $ yarn add react-native-version --dev
 ```
 
-Hook into the "version" or "postversion" npm script in your app's package.json:
+Add it in your app's package.json:
 
 ```diff
 {
@@ -21,17 +19,15 @@ Hook into the "version" or "postversion" npm script in your app's package.json:
 	"private": true,
 	"scripts": {
 		"start": "node node_modules/react-native/local-cli/cli.js start",
-+		"postversion": "react-native-version"
++		"release": "standard-version && react-native-version"
 	},
 	// ...
 }
 ```
 
-### Usage
+Before you publish a new build of your app, run `npm version <newversion>` or e.g. [`standard-version`](https://github.com/conventional-changelog/standard-version#readme).
 
-Before you publish a new build of your app, run `npm version <newversion>`.
-
-react-native-version will then update your `android/` and `ios/` code. Depending on the script and options you choose, it can also automatically amend the version bump commit and update the Git tag created by `npm version`. This method should be useful in most cases. If you need more control, take a look at the CLI and options below.
+react-native-version will then update your `android/` and `ios/` code. Depending on the script and options you choose, it can also automatically amend the version bump commit and update the Git tag created by `npm version` or `standard-version`. This method should be useful in most cases. If you need more control, take a look at the CLI and options below.
 
 ## CLI
 
@@ -47,7 +43,7 @@ $ yarn global add react-native-version
 
 ```bash
 $ cd AwesomeProject/
-$ npm version patch
+$ standard-version
 $ react-native-version
 ```
 
@@ -57,14 +53,13 @@ $ react-native-version
 
     -h, --help                   output usage information
     -V, --version                output the version number
-    -a, --amend                  Amend the previous commit. This is done automatically when react-native-version is run from the "version" or "postversion" npm script. Use "--never-amend" if you never want to amend. Also, if the previous commit is a valid npm-version commit, react-native-version will update the Git tag pointing to this commit.
+    -a, --amend                  Amend the previous commit. Use "--no-amend" if you don't want to amend. Also, if the previous commit is tagged with a valid Semver version, react-native-version will update the Git tag pointing to this commit.
     --skip-tag                   For use with "--amend", if you don't want to update Git tags. Use this option if you have git-tag-version set to false in your npm config or you use "--no-git-tag-version" during npm-version.
-    -A, --never-amend            Never amend the previous commit.
+    --no-amend                   Don't amend the previous commit.
     -b, --increment-build        Only increment build number.
-    -B, --never-increment-build  Never increment build number.
+    --no-increment-build         Don't increment build number.
     -d, --android [path]         Path to your "android/app/build.gradle" file.
     -i, --ios [path]             Path to your "ios/" folder.
-    -L, --legacy                 Version iOS using agvtool (macOS only). Requires Xcode Command Line Tools.
     -q, --quiet                  Be quiet, only report errors.
     -r, --reset-build            Reset build number back to "1" (iOS only). Unlike Android's "versionCode", iOS doesn't require you to bump the "CFBundleVersion", as long as "CFBundleShortVersionString" changes. To make it consistent across platforms, react-native-version bumps both by default. You can use this option if you prefer to keep the build number value at "1" after every version change. If you then need to push another build under the same version, you can use "-bt ios" to increment.
     -s, --set-build <number>     Set a build number. WARNING: Watch out when setting high values. This option follows Android's app versioning specifics - the value has to be an integer and cannot be greater than 2100000000. You cannot decrement this value after publishing to Google Play! More info at: https://developer.android.com/studio/publish/versioning.html#appversioning
@@ -106,7 +101,7 @@ $ RNV=android react-native-version --target ios
 ## API
 
 ```javascript
-import { version } from "react-native-version";
+import {version} from '@joakimbeng/react-native-version';
 
 async function doSomething() {
 	const versionResult = await version({
@@ -185,7 +180,6 @@ When running `react-native link` on Windows, native modules will be linked in yo
 
 ## See also
 
-* [agvtool](https://developer.apple.com/library/content/qa/qa1827/_index.html)
-* [npm-version](https://docs.npmjs.com/cli/version)
-* [Semantic Versioning (semver)](http://semver.org/)
-* [ionic-version](https://github.com/stovmascript/ionic-version)
+- [npm-version](https://docs.npmjs.com/cli/version)
+- [Semantic Versioning (semver)](http://semver.org/)
+- [standard-version](https://github.com/conventional-changelog/standard-version)

@@ -1,19 +1,18 @@
-import { getDefaults, getPlistFilenames, isExpoProject } from "../../";
-
-import { Xcode } from "pbxproj-dom/xcode";
-import flattenDeep from "lodash.flattendeep";
-import fs from "fs";
-import path from "path";
-import plist from "plist";
-import unique from "lodash.uniq";
+import fs from 'fs';
+import path from 'path';
+import {Xcode} from 'pbxproj-dom/xcode';
+import flattenDeep from 'lodash.flattendeep';
+import plist from 'plist';
+import unique from 'lodash.uniq';
+import {getDefaults, getPlistFilenames, isExpoProject} from '../..';
 
 export default t => {
 	const paths = getDefaults();
-	const pkg = require(path.join(t.context.tempDir, "package.json"));
+	const pkg = require(path.join(t.context.tempDir, 'package.json'));
 
 	const app = JSON.parse(
-		fs.readFileSync(path.join(t.context.tempDir, "app.json"), {
-			encoding: "utf8"
+		fs.readFileSync(path.join(t.context.tempDir, 'app.json'), {
+			encoding: 'utf8'
 		})
 	);
 
@@ -27,12 +26,7 @@ export default t => {
 	}
 
 	const xcode = Xcode.open(
-		path.join(
-			t.context.tempDir,
-			paths.ios,
-			`${pkg.name}.xcodeproj`,
-			"project.pbxproj"
-		)
+		path.join(t.context.tempDir, paths.ios, `${pkg.name}.xcodeproj`, 'project.pbxproj')
 	);
 
 	const CFBundleShortVersionString = {};
@@ -42,17 +36,14 @@ export default t => {
 		const target = path.dirname(filename);
 
 		const parsedPlist = plist.parse(
-			fs.readFileSync(path.join(t.context.tempDir, paths.ios, filename), "utf8")
+			fs.readFileSync(path.join(t.context.tempDir, paths.ios, filename), 'utf8')
 		);
 
 		CFBundleShortVersionString[target] = parsedPlist.CFBundleShortVersionString;
 		CFBundleVersion[target] = parsedPlist.CFBundleVersion;
 	});
 
-	const gradleFile = fs.readFileSync(
-		path.join(t.context.tempDir, paths.android),
-		"utf8"
-	);
+	const gradleFile = fs.readFileSync(path.join(t.context.tempDir, paths.android), 'utf8');
 
 	return {
 		CFBundleShortVersionString,
@@ -61,20 +52,16 @@ export default t => {
 			flattenDeep(
 				xcode.document.projects.map(project => {
 					return project.targets.map(target => {
-						return target.buildConfigurationsList.buildConfigurations.map(
-							config => {
-								return (
-									config.ast.value
-										.get("buildSettings")
-										.get("CURRENT_PROJECT_VERSION").text || []
-								);
-							}
-						);
+						return target.buildConfigurationsList.buildConfigurations.map(config => {
+							return (
+								config.ast.value.get('buildSettings').get('CURRENT_PROJECT_VERSION').text || []
+							);
+						});
 					});
 				})
 			)
-		).reduce((total, curr, index, array) => {
-			return `${parseInt(total) + parseInt(curr) / array.length}`;
+		).reduce((total, curr, _index, array) => {
+			return `${parseInt(total, 10) + parseInt(curr, 10) / array.length}`;
 		}),
 		version: pkg.version,
 		versionCode: gradleFile.match(/versionCode (\d+)/)[1],

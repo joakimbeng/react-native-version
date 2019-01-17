@@ -1,113 +1,70 @@
-import apiMacro from "./helpers/apiMacro";
-import cliMacro from "./helpers/cliMacro";
-import expected from "./fixtures";
-import npmScriptsMacro from "./helpers/npmScriptsMacro";
-import test from "ava";
+import test from 'ava';
+import apiMacro from './helpers/apiMacro';
+import cliMacro from './helpers/cliMacro';
+import expected from './fixtures';
+import npmScriptsMacro from './helpers/npmScriptsMacro';
 
 test(
-	"postversion (legacy)",
+	'postversion',
 	npmScriptsMacro,
-	{ postversion: "-a -L" },
-	"AwesomeProject",
+	{postversion: '-a'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion",
+	'postversion (Expo)',
 	npmScriptsMacro,
-	{ postversion: "-a" },
-	"AwesomeProject",
+	{postversion: '-a'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"postversion (Expo)",
+	'version',
 	npmScriptsMacro,
-	{ postversion: "-a" },
-	"my-new-project",
+	{version: '-a'},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"version (legacy)",
+	'version (Expo)',
 	npmScriptsMacro,
-	{ version: "-a -L" },
-	"AwesomeProject",
+	{version: '-a'},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
-test(
-	"version",
-	npmScriptsMacro,
-	{ version: "-a" },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
+test('CLI', cliMacro, ['-a'], 'AwesomeProject', expected.version.default, expected.tree.amended);
 
 test(
-	"version (Expo)",
-	npmScriptsMacro,
-	{ version: "-a" },
-	"my-new-project",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"CLI (legacy)",
+	'CLI (Expo)',
 	cliMacro,
-	["-a", "-L"],
-	"AwesomeProject",
+	['-a'],
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"CLI",
-	cliMacro,
-	["-a"],
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"CLI (Expo)",
-	cliMacro,
-	["-a"],
-	"my-new-project",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"API (legacy)",
+	'API',
 	apiMacro,
-	{ amend: true, legacy: true },
-	"AwesomeProject",
+	{amend: true},
+	'AwesomeProject',
 	expected.version.default,
 	expected.tree.amended
 );
 
 test(
-	"API",
+	'API (Expo)',
 	apiMacro,
-	{ amend: true },
-	"AwesomeProject",
-	expected.version.default,
-	expected.tree.amended
-);
-
-test(
-	"API (Expo)",
-	apiMacro,
-	{ amend: true },
-	"my-new-project",
+	{amend: true},
+	'my-new-project',
 	expected.version.default,
 	expected.tree.amended
 );

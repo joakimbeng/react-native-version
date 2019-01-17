@@ -1,5 +1,5 @@
-import child from "child_process";
-import { oneLine } from "common-tags";
+import child from 'child_process';
+import {oneLine} from 'common-tags';
 
 export default () => {
 	child.execSync(oneLine`
@@ -12,6 +12,9 @@ export default () => {
 		&& npm version major --ignore-scripts
 		&& npm version major --ignore-scripts
 		&& git checkout -q v2.0.0
-		&& npm version patch
 		`);
+	const output = child.execSync('npm version patch');
+	if (process.env.DO_LOG_OUTPUT === '1') {
+		console.log(output.toString());
+	}
 };

@@ -1,113 +1,77 @@
-import apiMacro from "./helpers/apiMacro";
-import cliMacro from "./helpers/cliMacro";
-import expected from "./fixtures";
-import npmScriptsMacro from "./helpers/npmScriptsMacro";
-import test from "ava";
+import test from 'ava';
+import apiMacro from './helpers/apiMacro';
+import cliMacro from './helpers/cliMacro';
+import expected from './fixtures';
+import npmScriptsMacro from './helpers/npmScriptsMacro';
 
 test(
-	"postversion (legacy)",
+	'postversion',
 	npmScriptsMacro,
-	{ postversion: "-r -L" },
-	"AwesomeProject",
+	{postversion: '-r'},
+	'AwesomeProject',
 	expected.version.resetBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"postversion",
+	'postversion (Expo)',
 	npmScriptsMacro,
-	{ postversion: "-r" },
-	"AwesomeProject",
+	{postversion: '-r'},
+	'my-new-project',
 	expected.version.resetBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"postversion (Expo)",
+	'version',
 	npmScriptsMacro,
-	{ postversion: "-r" },
-	"my-new-project",
+	{version: '-r'},
+	'AwesomeProject',
 	expected.version.resetBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"version (legacy)",
+	'version (Expo)',
 	npmScriptsMacro,
-	{ version: "-r -L" },
-	"AwesomeProject",
+	{version: '-r'},
+	'my-new-project',
 	expected.version.resetBuild,
 	expected.tree.buildNumber.amended
 );
 
 test(
-	"version",
-	npmScriptsMacro,
-	{ version: "-r" },
-	"AwesomeProject",
-	expected.version.resetBuild,
-	expected.tree.buildNumber.amended
-);
-
-test(
-	"version (Expo)",
-	npmScriptsMacro,
-	{ version: "-r" },
-	"my-new-project",
-	expected.version.resetBuild,
-	expected.tree.buildNumber.amended
-);
-
-test(
-	"CLI (legacy)",
+	'CLI',
 	cliMacro,
-	["-r", "-L"],
-	"AwesomeProject",
+	['-r'],
+	'AwesomeProject',
 	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"CLI",
+	'CLI (Expo)',
 	cliMacro,
-	["-r"],
-	"AwesomeProject",
+	['-r'],
+	'my-new-project',
 	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"CLI (Expo)",
-	cliMacro,
-	["-r"],
-	"my-new-project",
-	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
-);
-
-test(
-	"API (legacy)",
+	'API',
 	apiMacro,
-	{ resetBuild: true, legacy: true },
-	"AwesomeProject",
+	{resetBuild: true},
+	'AwesomeProject',
 	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
 
 test(
-	"API",
+	'API (Expo)',
 	apiMacro,
-	{ resetBuild: true },
-	"AwesomeProject",
+	{resetBuild: true},
+	'my-new-project',
 	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
-);
-
-test(
-	"API (Expo)",
-	apiMacro,
-	{ resetBuild: true },
-	"my-new-project",
-	expected.version.resetBuild,
-	expected.tree.buildNumber.notAmended
+	expected.tree.buildNumber.amended
 );
